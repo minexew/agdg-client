@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>MeMeO Management Console</title>
+
+    <script src="js/jquery-2.2.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="config.js"></script>
+    <script src="mgmt-console.js"></script>
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>MeMeO Management Console</h1>
+
+        <div class="alert alert-info" id="status-connecting">Connecting...</div>
+        <div class="alert alert-success collapse" id="status-connected">Connected.</div>
+        <div class="alert alert-danger collapse" id="status-failed">Connection failed.</div>
+
+        <table id="console" class="table table-condensed">
+            <tr>
+                <th>Time</th>
+                <th>Event</th>
+            </tr>
+        </table>
+
+        <button type="button" class="btn btn-default" id="cmd-stop-server">Stop server</button>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">Close server</div>
+            <div class="panel-body">
+                Reason: <input type="text" class="form-control" id="close-server-reason">
+                <button type="button" class="btn btn-warning" id="btn-close-server">Close server</button>
+                <button type="button" class="btn btn-success" id="btn-reopen-server">Reopen server</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+window.onload = function() {
+    new ManagementConsoleClient();
+};
+    </script>
+</body>
+</html>

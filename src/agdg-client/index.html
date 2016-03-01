@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>MeMeO Client</title>
+
+    <script src="js/jquery-2.2.0.min.js"></script>
+    <script src="js/playcanvas-latest.js"></script>
+
+    <script src="config.js"></script>
+    <script src="agdg-client.js"></script>
+
+    <style>
+html, body {
+    color: #fff;
+    margin: 0;
+    overflow: hidden;
+}
+
+body, .form-control {
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 18px;
+}
+
+.overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hcenter {
+    margin: 0 auto;
+}
+
+.vcenter {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.window {
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 8px 20px;
+}
+
+#login-box {
+    width: 300px;
+}
+
+.form-control {
+    color: #fff;
+    height: 30px;
+    width: 100%;
+}
+
+.form-control.small {
+    font-size: 14px;
+    height: 20px;
+}
+
+input[type="password"].form-control,
+input[type="text"].form-control {
+    background: none;
+    border: none;
+    border-bottom: 2px solid #c44;
+    outline: none;
+    border-radius: 5px;
+}
+
+button.form-control {
+    background: none;
+    border: 2px solid #833;
+    border-radius: 5px;
+    outline: none;
+}
+
+.text-center {
+    text-align: center;
+}
+
+#chat-box {
+    position: absolute;
+    left: 20px;
+    bottom: 50px;
+    width: 350px;
+    height: 250px;
+
+    font-size: 14px;
+}
+
+#chat-messages {
+    height: 90%;
+    margin-top: 5px;
+    overflow-y: auto;
+}
+
+#status-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+
+    padding: 8px;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+#loading-text {
+    margin-bottom: 10px;
+}
+    </style>
+</head>
+<body>
+    <canvas id="application-canvas" tabindex="0"></canvas>
+    <div id="chat-box" class="window" style="display: none">
+        <input type="text" class="form-control small" id="chat-msg" placeholder="Type here to chat">
+        <div id="chat-messages"></div>
+    </div>
+    <div class="overlay" id="login-overlay">
+        <div id="status-bar">
+        </div>
+        <div class="hcenter vcenter window" id="login-box">
+            <div class="login-status text-center" style="margin: 10px">
+            </div>
+            <table style="width: 100%" class="login-form">
+                <tr>
+                    <td>Username</td>
+                    <td><input type="text" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>Password</td>
+                    <td><input type="password" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><button type="button" class="form-control">Login</button></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="overlay" id="loading-overlay" style="display: none">
+        <div class="hcenter vcenter window text-center" style="width: 300px">
+            <div id="loading-text"></div>
+            <div>
+                <div id="loading-bar" style="background-color: #ddd; border-radius: 2px; border-top: solid 1px #444; border-bottom: solid 1px #444; width: 0%; height: 2px"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
