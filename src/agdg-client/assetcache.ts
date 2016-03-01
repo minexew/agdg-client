@@ -56,7 +56,7 @@
         downloadAsset(hash: string, callback: (data: Blob) => void, failCallback: (error) => void) {
             var self = this;
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/content/' + hash, true);
+            xhr.open('GET', 'content/' + hash, true);
             xhr.responseType = 'blob';
 
             xhr.onload = function (e) {
