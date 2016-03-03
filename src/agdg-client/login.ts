@@ -18,6 +18,7 @@ module Login {
         statusBar: JQuery;
         loginForm: JQuery;
         loginStatus: JQuery;
+        newsPanel: JQuery;
 
         clientVersion: number = 1;
 
@@ -29,6 +30,7 @@ module Login {
             this.statusBar = $('#status-bar');
             this.loginForm = $('#login-box .login-form');
             this.loginStatus = $('#login-box .login-status');
+            this.newsPanel = $('#news-panel')
 
             this.loginForm.find('button').click(() => {
                 self.setLoginStatus('Logging in...', false);
@@ -41,6 +43,11 @@ module Login {
             });
 
             this.connect();
+        }
+
+        uninitialize() {
+            if (this.newsPanel)
+                this.newsPanel.remove();
         }
 
         connect() {
@@ -65,6 +72,8 @@ module Login {
                         if (message.type == 'hello') {
                             self.setState(LoginState.connected, message.serverName);
 
+                            self.showNews(message.news);
+
                             if (self.autologin) {
                                 setTimeout(function () {
                                     self.setLoginStatus('Logging in...', false);
@@ -88,6 +97,7 @@ module Login {
                             self.setLoginStatus("Success!", false);
                             self.setState(LoginState.loggedIn);
 
+                            self.uninitialize();
                             self.transferToRealm(message.realms[0], message.token);
                         }
                         else if (message.type == 'error') {
@@ -126,6 +136,19 @@ module Login {
                 this.loginForm.hide();
 
             this.loginStatus.text(status);
+        }
+
+        showNews(news) {
+            news.forEach(entry => {
+                this.newsPanel.append(
+                    $('<div>')
+                        .append($('<h5>').html(entry.when_posted))
+                        .append($('<h3>').html(entry.title))
+                        .append(entry.contents)
+                );
+            });
+
+            $('body').append(this.newsPanel);
         }
 
         transferToRealm(realm, token: string) {

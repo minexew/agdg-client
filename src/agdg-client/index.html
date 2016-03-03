@@ -111,6 +111,25 @@ button.form-control {
 #loading-text {
     margin-bottom: 10px;
 }
+
+#news-panel {
+    background-color: rgba(0, 0, 0, 0.1);
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 240px;
+}
+
+#news-panel h5 {
+    color: #999;
+    margin: 0;
+    margin-top: 1em;
+}
+
+#news-panel h3 {
+    margin: 0.2em 0;
+    border-bottom: 1px solid #666;
+}
     </style>
 </head>
 <body>
@@ -144,6 +163,7 @@ button.form-control {
                 </tr>
             </table>
         </div>
+        <div id="news-panel"></div>
     </div>
     <div class="overlay" id="loading-overlay" style="display: none">
         <div class="hcenter vcenter window text-center" style="width: 300px">
