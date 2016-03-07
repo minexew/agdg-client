@@ -14,7 +14,8 @@
     val(): string;
     val(value: string): JQuery;
     attr(attrName: string): string;
-    click(callback: any): JQuery;
+    click(callback?: any): JQuery;
+    keyup(callback?: any): JQuery;
     find(selector: string): JQuery;
     on(selector: string, callback: any): JQuery;
     scrollTop(value: number): JQuery;
@@ -27,4 +28,5 @@ declare var $: {
     (el: HTMLElement): JQuery;
     (selector: string): JQuery;
     (readyCallback: () => void): JQuery;
+    (selectors: Array<any>): JQuery;
 };

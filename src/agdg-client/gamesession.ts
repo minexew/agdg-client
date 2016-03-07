@@ -1,5 +1,5 @@
 ﻿/// <reference path="assetcache.ts"/>
-/// <reference path="realm-protocol-generated.ts"/>
+/// <reference path="realmprotocol-generated.ts"/>
 
 module agdg {
     export class GameSession {
@@ -16,112 +16,116 @@ module agdg {
         loadingScreen: LoadingScreen = new LoadingScreen();
 
         constructor() {
-            var self = this;
-
             this.statusBar = $('#status-bar');
         }
 
         connect(realmUrl: string, token: string) {
-            var self = this;
-
             //this.setState(LoginState.connecting, this.loginServerUrl);
             this.ws = new WebSocket(realmUrl);
             this.ws.binaryType = 'arraybuffer';
 
-            this.ws.onopen = function (event) {
-                self.protocol = new RealmProtocol.RealmProtocol(self.ws);
-                self.protocol.sendCHello(token);
+            this.ws.onopen = event => {
+                this.protocol = new RealmProtocol.RealmProtocol(this.ws);
+                this.protocol.sendCHello(token, 0);
 
-                /*self.setState(LoginState.negotiating);
-
-                self.ws.send(JSON.stringify({ clientVersion: self.clientVersion }));*/
-
-                self.statusBar.hide();
+                this.statusBar.hide();
             };
 
-            this.ws.onmessage = function (event) {
+            this.ws.onmessage = event => {
                 // TODO: state machine etc.
+
+                console.log(event.data, event.data.byteLength);
 
                 var dv = new DataView(event.data);
                 //console.log(dv.getUint8(0));
 
-                switch (dv.getUint8(0)) {
-                    case 1:     // kSHello
-                        var data = self.protocol.decodeSHello(dv);
-                        self.protocol.sendCEnterWorld(data.characters[0]);   // FIXME
-                        break;
+                // parse commands
+                for (var offset = 0; offset < event.data.byteLength; offset++) {
+                    var code = dv.getUint8(offset + 0);
+                    var cookie = dv.getUint8(offset + 1);
+                    var payloadLength = dv.getUint16(offset + 2);
 
-                    case 2:     // kSLoadZone
-                        var data = self.protocol.decodeSLoadZone(dv);
+                    console.log('command', code, cookie, payloadLength, offset + 4);
+                    this.handleCommand(dv, code, cookie, offset + 4);
 
-                        self.loadingScreen.show('Loading Zone Data');
-                        g_assetCache.getOrDownloadAssetJSON(data.zoneRef, (zoneData) => {
-                            console.log('zone data loaded');
-                            self.onZoneDataLoaded(zoneData);
-                        },
-                        (error) => {
-                        });
-                        break;
-
-                    case 3:     // kSZoneState
-                        var data = self.protocol.decodeSZoneState(dv);
-                        console.log(data);
-
-                        for (var index in data.entities) {
-                            var e = data.entities[index];
-                            self.world.spawnPlayerEntity(e.eid, e.name, e.pos, e.dir);
-                        }
-
-                        self.world.spawnPlayer(data.playerEid, data.playerName, data.playerPos, data.playerDir);
-                        break;
-
-                    case 4:     // kSPing
-                        self.protocol.sendCPong();
-                        break;
-
-                    case 20:    // kSEntitySpawn
-                        var data = self.protocol.decodeSEntitySpawn(dv);
-                        var e = data.entity;
-
-                        self.world.spawnPlayerEntity(e.eid, e.name, e.pos, e.dir);
-                        break;
-
-                    case 21:    // kSEntityDespawn
-                        var data = self.protocol.decodeSEntityDespawn(dv);
-                        self.world.despawnEntity(data.eid);
-                        break;
-
-                    case 22:    // kSEntityUpdate
-                        var data = self.protocol.decodeSEntityUpdate(dv);
-                        var ent = self.world.getEntityByEid(data.eid);
-
-                        if (ent)
-                            ent.updateInterpPosDir(data.pos, data.dir);
-                        break;
-
-                    case 30:    // kSChatSay
-                        var data = self.protocol.decodeSChatSay(dv);
-
-                        if (data.eid) {
-                            var ent = self.world.getEntityByEid(data.eid);
-
-                            if (ent)
-                                self.chat.showMessage(ent, data.text, data.html);
-                            else
-                                console.log("Error: failed to find eid=" + data.eid);
-                        }
-                        else {
-                            self.chat.showMessage(null, data.text, data.html);
-                        }
-                        break;
+                    offset += 4 + payloadLength;
                 }
             }
 
-            this.ws.onclose = function (event) {
-                /*if (self.state == LoginState.connecting)
-                    self.setState(LoginState.failedToConnect);
-                else
-                    self.setState(LoginState.disconnected);*/
+            this.ws.onclose = event => {
+            }
+        }
+
+        handleCommand(dv: DataView, code: number, cookie: number, offset: number) {
+            switch (code) {
+                case 1:     // kSHello
+                    var data = this.protocol.decodeSHello(dv, offset);
+                    this.protocol.sendCEnterWorld(data.characters[0], 0);
+                    break;
+
+                case 2:     // kSLoadZone
+                    var data = this.protocol.decodeSLoadZone(dv, offset);
+
+                    this.loadingScreen.show('Loading Zone Data');
+                    g_assetCache.getOrDownloadAssetJSON(data.zoneRef, (zoneData) => {
+                        console.log('zone data loaded');
+                        this.onZoneDataLoaded(zoneData);
+                    },
+                    (error) => {
+                    });
+                    break;
+
+                case 3:     // kSZoneState
+                    var data = this.protocol.decodeSZoneState(dv, offset);
+                    console.log(data);
+
+                    for (var index in data.entities) {
+                        var e = data.entities[index];
+                        this.world.spawnPlayerEntity(e.eid, e.name, e.pos, e.dir);
+                    }
+
+                    this.world.spawnPlayer(data.playerEid, data.playerName, data.playerPos, data.playerDir);
+                    break;
+
+                case 4:     // kSPing
+                    this.protocol.sendCPong(cookie);
+                    break;
+
+                case 20:    // kSEntitySpawn
+                    var data = this.protocol.decodeSEntitySpawn(dv, offset);
+                    var e = data.entity;
+
+                    this.world.spawnPlayerEntity(e.eid, e.name, e.pos, e.dir);
+                    break;
+
+                case 21:    // kSEntityDespawn
+                    var data = this.protocol.decodeSEntityDespawn(dv, offset);
+                    this.world.despawnEntity(data.eid);
+                    break;
+
+                case 22:    // kSEntityUpdate
+                    var data = this.protocol.decodeSEntityUpdate(dv, offset);
+                    var ent = this.world.getEntityByEid(data.eid);
+
+                    if (ent)
+                        ent.updateInterpPosDir(data.pos, data.dir);
+                    break;
+
+                case 30:    // kSChatSay
+                    var data = this.protocol.decodeSChatSay(dv, offset);
+
+                    if (data.eid) {
+                        var ent = this.world.getEntityByEid(data.eid);
+
+                        if (ent)
+                            this.chat.showMessage(ent, data.text, data.html);
+                        else
+                            console.log("Error: failed to find eid=" + data.eid);
+                    }
+                    else {
+                        this.chat.showMessage(null, data.text, data.html);
+                    }
+                    break;
             }
         }
 
@@ -135,18 +139,18 @@ module agdg {
         }
 
         updatePlayer(pos: pc.Vec3, dir: pc.Vec3) {
-            this.protocol.sendCPlayerMovement(pos, dir);
+            this.protocol.sendCPlayerMovement(pos, dir, 0);
         }
 
         say(message: string) {
-            this.protocol.sendCChatSay(message);
+            this.protocol.sendCChatSay(message, 0);
         }
 
         zoneReady(zoneData) {
             console.log(zoneData);
             this.world.onZoneLoaded(zoneData);
 
-            this.protocol.sendCZoneLoaded();
+            this.protocol.sendCZoneLoaded(0);
 
             this.loadingScreen.hide();
         }

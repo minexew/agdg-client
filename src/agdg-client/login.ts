@@ -9,7 +9,8 @@ module Login {
         versionRejected,
         connected,
         loggingIn,
-        loggedIn
+        loggedIn,
+        loginError,
     };
 
     export class LoginSession {
@@ -25,21 +26,28 @@ module Login {
         autologin: any;// = { username: 'admin', password: 'admin' };
 
         constructor() {
-            var self = this;
-
             this.statusBar = $('#status-bar');
             this.loginForm = $('#login-box .login-form');
             this.loginStatus = $('#login-box .login-status');
             this.newsPanel = $('#news-panel')
 
+            var username = this.loginForm.find('input[type="text"]');
+            var password = this.loginForm.find('input[type="password"]');
+
+            this.loginForm.find('input').keyup(event => {
+                if (event.keyCode != 13)
+                    return;
+
+                if (!username.val())
+                    username.focus();
+                else
+                    this.loginForm.find('button').click();
+            });
+
             this.loginForm.find('button').click(() => {
-                self.setLoginStatus('Logging in...', false);
-                self.setState(LoginState.loggingIn);
+                this.setState(LoginState.loggingIn);
 
-                var username = self.loginForm.find('input[type="text"]').val();
-                var password = self.loginForm.find('input[type="password"]').val();
-
-                self.ws.send(JSON.stringify({ username: username, password: password }));
+                this.ws.send(JSON.stringify({ username: username.val(), password: password.val() }));
             });
 
             this.connect();
@@ -51,68 +59,63 @@ module Login {
         }
 
         connect() {
-            var self = this;
-
             var loginServerUrl = agdg_config.loginServerUrl;
 
             this.setState(LoginState.connecting, loginServerUrl);
             this.ws = new WebSocket(loginServerUrl);
 
-            this.ws.onopen = function(event) {
-                self.setState(LoginState.negotiating);
+            this.ws.onopen = event => {
+                this.setState(LoginState.negotiating);
 
-                self.ws.send(JSON.stringify({ clientVersion: self.clientVersion }));
+                this.ws.send(JSON.stringify({ clientVersion: this.clientVersion }));
             };
 
-            this.ws.onmessage = function(event) {
+            this.ws.onmessage = event => {
                 var message = JSON.parse(event.data);
+                console.log(this.state, message);
 
-                switch (self.state) {
+                switch (this.state) {
                     case LoginState.negotiating:
                         if (message.type == 'hello') {
-                            self.setState(LoginState.connected, message.serverName);
+                            this.setState(LoginState.connected, message);
 
-                            self.showNews(message.news);
+                            this.showNews(message.news);
 
-                            if (self.autologin) {
+                            if (this.autologin) {
                                 setTimeout(function () {
-                                    self.setLoginStatus('Logging in...', false);
-                                    self.setState(LoginState.loggingIn);
-                                    self.ws.send(JSON.stringify(self.autologin));
+                                    this.setState(LoginState.loggingIn);
+                                    this.ws.send(JSON.stringify(this.autologin));
                                 }, 1000);
                             }
                         }
                         else if (message.type == 'reject') {
-                            self.setState(LoginState.versionRejected, message.expectedVersion);
+                            this.setState(LoginState.versionRejected);
                         }
                         else if (message.type == 'server_closed') {
-                            self.setLoginStatus('Server is closed: ' + message.message, false);
-                            self.setState(LoginState.disconnected);
-                            self.ws.close();
+                            this.setState(LoginState.disconnected, 'Server is closed: ' + message.message);
+                            this.ws.close();
                         }
                         break;
 
                     case LoginState.loggingIn:
                         if (message.type == 'success') {
-                            self.setLoginStatus("Success!", false);
-                            self.setState(LoginState.loggedIn);
+                            this.setState(LoginState.loggedIn);
 
-                            self.uninitialize();
-                            self.transferToRealm(message.realms[0], message.token);
+                            this.uninitialize();
+                            this.transferToRealm(message.realms[0], message.token);
                         }
                         else if (message.type == 'error') {
-                            self.setLoginStatus(message.error, true);
-                            //self.setState(LoginState.connected);
+                            this.setState(LoginState.loginError, message.error);
                         }
                         break;
                 }
             }
 
-            this.ws.onclose = function (event) {
-                if (self.state == LoginState.connecting)
-                    self.setState(LoginState.failedToConnect);
+            this.ws.onclose = event => {
+                if (this.state == LoginState.connecting)
+                    this.setState(LoginState.failedToConnect);
                 else
-                    self.setState(LoginState.disconnected);
+                    this.setState(LoginState.disconnected);
             }
         }
 
@@ -120,22 +123,35 @@ module Login {
             this.state = state;
 
             switch (state) {
-                case LoginState.disconnected: this.statusBar.text('Disconnected'); break;
-                case LoginState.connecting: this.statusBar.text('Connecting to ' + data + '...'); break;
-                case LoginState.failedToConnect: this.statusBar.text('Failed to connect.'); break;
-                case LoginState.negotiating: this.statusBar.text('Negotiating...'); break;
-                case LoginState.versionRejected: this.statusBar.text('Rejected by server (expected version ' + data + ')'); break;
-                case LoginState.connected: this.statusBar.text('Connected to ' + data); break;
+                case LoginState.disconnected: this.setStatusText(data ? data : 'Disconnected'); break;
+                case LoginState.connecting: this.setStatusText('Connecting to ' + data + '...'); break;
+                case LoginState.failedToConnect: this.setStatusText('Failed to connect.'); break;
+                case LoginState.negotiating: this.setStatusText('Negotiating...'); break;
+                case LoginState.versionRejected: this.setStatusText('Rejected by server (try Shift+F5)'); break;
+
+                case LoginState.connected:
+                    if (data.anonymousLogin) {
+                        this.loginStatus.text("Anonymous login. Use any username.");
+                        this.loginForm.find('.password-row').hide();
+                    }
+                    else {
+                        this.loginStatus.text("Login to " + data.serverName + ":");
+                        this.loginForm.find('.password-row').show();
+                    }
+
+                    this.loginForm.show();
+                    break;
+
+                case LoginState.loginError:
+                    this.loginStatus.text(data);
+                    this.loginForm.show();
+                    break;
             }
         }
 
-        setLoginStatus(status, showForm: boolean) {
-            if (showForm)
-                this.loginForm.show();
-            else
-                this.loginForm.hide();
-
-            this.loginStatus.text(status);
+        setStatusText(text) {
+            this.loginForm.hide();
+            this.loginStatus.text(text);
         }
 
         showNews(news) {
