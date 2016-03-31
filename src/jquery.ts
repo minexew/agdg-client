@@ -1,4 +1,5 @@
 ﻿interface JQuery {
+    length: number;
     fadeIn(): JQuery;
     fadeOut(): JQuery;
     focus(): JQuery;

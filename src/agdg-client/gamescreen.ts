@@ -12,21 +12,20 @@ module agdg {
         session: GameSession;
 
         constructor(session: GameSession) {
-            var self = this;
-            self.chatBox = $('#chat-box');
-            self.chatMsg = $('#chat-msg');
-            self.chatMessages = $('#chat-messages');
-            self.session = session;
+            this.chatBox = $('#chat-box');
+            this.chatMsg = $('#chat-msg');
+            this.chatMessages = $('#chat-messages');
+            this.session = session;
 
-            self.chatBox.show();
+            this.chatBox.show();
 
             //$('#chat-send').click(() => {
-            self.chatMsg.on('keypress', (e) => {
+            this.chatMsg.on('keypress', (e) => {
                 if (!e) e = window.event;
                 var keyCode = e.keyCode || e.which;
                 if (keyCode == '13') {
-                    self.session.say(self.chatMsg.val());
-                    self.chatMsg.val('');
+                    this.session.say(this.chatMsg.val());
+                    this.chatMsg.val('');
                     $('#application-canvas').focus();
                     return false;
                 }
@@ -49,11 +48,24 @@ module agdg {
 
             if (green)
                 message = '<span style="color: #99cc33">' + message + '</span>';
+            else
+                message = '<span>' + message + '</span>';
 
-            if (entity)
-                message = '<b>' + entity.getName() + '</b>&gt; ' + message;
+            var messageHtml = $(message);
+            var messageDiv = $('<div>');
 
-            this.chatMessages.append($('<div>').html(message));
+            var dlgReply = messageHtml.find('.dlg-reply');
+
+            if (dlgReply.length) {
+                dlgReply.click((e) => this.session.say($(e.target).text()));
+                messageDiv.append('&gt; ');
+            }
+            else if (entity)
+                messageDiv.append('<b>' + entity.getName() + '</b>&gt; ');
+
+            messageDiv.append(messageHtml);
+
+            this.chatMessages.append(messageDiv);
             this.chatMessages.scrollTop(this.chatMessages[0].scrollHeight);
         }
     }
