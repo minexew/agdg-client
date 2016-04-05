@@ -82,10 +82,10 @@ module Login {
                             this.showNews(message.news);
 
                             if (this.autologin) {
-                                setTimeout(function () {
+                                setTimeout(() => {
                                     this.setState(LoginState.loggingIn);
                                     this.ws.send(JSON.stringify(this.autologin));
-                                }, 1000);
+                                }, 100);
                             }
                         }
                         else if (message.type == 'reject') {

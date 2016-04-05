@@ -1,7 +1,8 @@
 ﻿interface JQuery {
     length: number;
+    clone(): JQuery;
     fadeIn(): JQuery;
-    fadeOut(): JQuery;
+    fadeOut(duration?: number, complete?: any): JQuery;
     focus(): JQuery;
     html(): string;
     html(val: string): JQuery;

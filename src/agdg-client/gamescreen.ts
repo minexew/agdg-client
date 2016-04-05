@@ -32,7 +32,7 @@ module agdg {
             });
         }
 
-        showMessage(entity: pc.Entity, message: string, html: boolean) {
+        showMessage(entity: Entity, message: string, html: boolean) {
             var entityMap = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': '&quot;', "'": '&#39;', "/": '&#x2F;'};
 
             function escapeHtml(string) {
@@ -60,8 +60,10 @@ module agdg {
                 dlgReply.click((e) => this.session.say($(e.target).text()));
                 messageDiv.append('&gt; ');
             }
-            else if (entity)
+            else if (entity) {
                 messageDiv.append('<b>' + entity.getName() + '</b>&gt; ');
+                entity.showChatBubble(messageHtml);
+            }
 
             messageDiv.append(messageHtml);
 
@@ -300,6 +302,8 @@ module agdg {
                     camera.setPosition(camVec.clone().add(self.playerEntity.getPosition()));
                     self.player.update();
                 }
+
+                self.updateEntities2D()
             });
 
             $('#application-canvas').focus();
@@ -313,6 +317,11 @@ module agdg {
         updateEntities() {
             for (var eid in this.entities)
                 this.entities[eid].update();
+        }
+
+        updateEntities2D() {
+            for (var eid in this.entities)
+                this.entities[eid].update2D();
         }
     }
 

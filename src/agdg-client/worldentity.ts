@@ -9,7 +9,12 @@ module agdg {
         lastPoint: any;
 
         labelDiv: JQuery;
-        width: number;
+        labelWidth: number;
+
+        chatBubble: JQuery;
+        chatBubbleWidth: number;
+        chatBubbleHeight: number;
+        chatBubbleTimer: number;
 
         constructor() {
             super();
@@ -18,6 +23,9 @@ module agdg {
         destroy() {
             if (this.labelDiv)
                 this.labelDiv.remove();
+
+            if (this.chatBubble)
+                this.chatBubble.remove();
 
             super.destroy();
         }
@@ -69,7 +77,20 @@ module agdg {
             }
 
             this.labelDiv.text(name);
-            this.width = this.labelDiv.width();
+            this.labelWidth = this.labelDiv.width();
+        }
+
+        showChatBubble(messageHtml:JQuery) {
+            if (this.chatBubble)
+                this.chatBubble.remove();
+
+            this.chatBubble = $('<div class="chatbubble">');
+            this.chatBubble.append(messageHtml.clone());
+            $('body').append(this.chatBubble);
+
+            this.chatBubbleWidth = this.chatBubble.width();
+            this.chatBubbleHeight = this.chatBubble.height();
+            this.chatBubbleTimer = 100;
         }
 
         update() {
@@ -77,10 +98,21 @@ module agdg {
                 this.interpolatePosition();
             else
                 this.translate(this.velocity);
+        }
 
+        update2D() {
             if (this.labelDiv) {
                 var pos = g_camera.worldToScreen(this.getPosition());
-                this.labelDiv.css('left', pos.x - this.width / 2).css('top', pos.y - 100);
+                this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
+            }
+
+            if (this.chatBubble) {
+                if (this.chatBubbleTimer-- <= 0) {
+                    this.chatBubble.fadeOut(1000, function() { $(this).remove(); });
+                    this.chatBubble = undefined;
+                }
+                else
+                    this.chatBubble.css('left', pos.x - this.chatBubbleWidth / 2).css('top', pos.y - 100 - this.chatBubbleHeight);
             }
         }
 
