@@ -94,22 +94,28 @@ module agdg {
 
         setUpInput() {
             window.addEventListener('keydown', evt => {
-                if (evt.repeat) return;
+                if (this.keys[evt.keyCode]) return;
+
                 if (evt.keyCode === 38) this.startMoving(0, -1);
                 else if (evt.keyCode === 40) this.startMoving(0, 1);
                 else if (evt.keyCode === 37) this.startMoving(-1, 0);
                 else if (evt.keyCode === 39) this.startMoving(1, 0);
                 else return;
+
+                this.keys[evt.keyCode] = true;
                 evt.preventDefault();
             });
 
             window.addEventListener('keyup', evt => {
-                if (evt.repeat) return;
+                if (!this.keys[evt.keyCode]) return;
+
                 if (evt.keyCode === 38) this.stopMoving(0, -1);
                 else if (evt.keyCode === 40) this.stopMoving(0, 1);
                 else if (evt.keyCode === 37) this.stopMoving(-1, 0);
                 else if (evt.keyCode === 39) this.stopMoving(1, 0);
                 else return;
+
+                this.keys[evt.keyCode] = false;
                 evt.preventDefault();
             });
         }
