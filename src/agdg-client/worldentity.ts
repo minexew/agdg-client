@@ -1,9 +1,11 @@
 ﻿/// <reference path="gamescreen.ts"/>
-/// <reference path="../playcanvas.ts"/>
+/// <reference path="../babylon.2.3.d.ts"/>
 
 module agdg {
-    export class Entity extends pc.Entity {
-        velocity: pc.Vec3 = new pc.Vec3();
+    export class Entity {
+        velocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+        name: string;
+        mesh: BABYLON.Mesh;
 
         lerpSegments: Array<any>;
         lastPoint: any;
@@ -16,18 +18,18 @@ module agdg {
         chatBubbleHeight: number;
         chatBubbleTimer: number;
 
-        constructor() {
-            super();
-        }
-
         destroy() {
             if (this.labelDiv)
                 this.labelDiv.remove();
 
             if (this.chatBubble)
                 this.chatBubble.remove();
+        }
 
-            super.destroy();
+        getName(): string { return this.name; }
+
+        getPosition(): BABYLON.Vector3 {
+            return this.mesh.position;
         }
 
         interpolatePosition() {
@@ -54,7 +56,7 @@ module agdg {
                     remainder -= multiplier;
                 }
 
-                this.translate(seg.vec.clone().scale(multiplier));
+                this.mesh.position.addInPlace(seg.vec.scale(multiplier));
 
                 seg.duration -= multiplier;
 
@@ -69,7 +71,7 @@ module agdg {
         }
 
         setName(name: string): void {
-            super.setName(name);
+            this.name = name;
 
             if (!this.labelDiv) {
                 this.labelDiv = $('<div style="font-weight: bold; position: fixed; text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.75)"></div>');
@@ -78,6 +80,11 @@ module agdg {
 
             this.labelDiv.text(name);
             this.labelWidth = this.labelDiv.width();
+        }
+
+        setPosition(pos: BABYLON.Vector3) {
+            if (this.mesh)
+                this.mesh.position = pos;
         }
 
         showChatBubble(messageHtml:JQuery) {
@@ -96,14 +103,14 @@ module agdg {
         update() {
             if (this.lerpSegments)
                 this.interpolatePosition();
-            else
-                this.translate(this.velocity);
+            else if (this.mesh)
+                this.mesh.position.addInPlace(this.velocity);
         }
 
         update2D() {
             if (this.labelDiv) {
-                var pos = g_camera.worldToScreen(this.getPosition());
-                this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
+                //var pos = g_camera.worldToScreen(this.getPosition());
+                //this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
             }
 
             if (this.chatBubble) {
@@ -111,12 +118,12 @@ module agdg {
                     this.chatBubble.fadeOut(1000, function() { $(this).remove(); });
                     this.chatBubble = undefined;
                 }
-                else
-                    this.chatBubble.css('left', pos.x - this.chatBubbleWidth / 2).css('top', pos.y - 100 - this.chatBubbleHeight);
+                //else
+                //    this.chatBubble.css('left', pos.x - this.chatBubbleWidth / 2).css('top', pos.y - 100 - this.chatBubbleHeight);
             }
         }
 
-        updateInterpPosDir(pos: pc.Vec3, dir: pc.Vec3) {
+        updateInterpPosDir(pos: BABYLON.Vector3, dir: BABYLON.Vector3) {
             // TODO: handle big jumps
 
             var speed = 0.05;
@@ -127,15 +134,14 @@ module agdg {
             if (!this.lastPoint)
                 this.lastPoint = this.getPosition();
 
-            var towards = pos.clone();
-            towards.sub(this.lastPoint);
+            var towards = pos.subtract(this.lastPoint);
             var dist = towards.length();
 
             if (dist < 0.001)
                 return;
 
             var duration = dist / speed;
-            towards.normalize().scale(speed);
+            towards.normalize().scaleInPlace(speed);
 
             this.lerpSegments.push({ vec: towards, duration: duration });
             this.lastPoint = pos;

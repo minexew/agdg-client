@@ -2,7 +2,7 @@
 /// <reference path="../jquery.ts"/>
 
 module agdg {
-    export var g_camera: pc.CameraComponent;
+    //export var g_camera: pc.CameraComponent;
 
     export class Chat {
         chatBox: JQuery;
@@ -78,7 +78,7 @@ module agdg {
 
         moving: boolean = false;
         forceSync: boolean = false;
-        requestedVelocity: pc.Vec3 = pc.Vec3.ZERO.clone();
+        requestedVelocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         framesWithoutSync: number = 0;
 
         constructor(playerEntity: agdg.Entity, session: GameSession) {
@@ -87,7 +87,7 @@ module agdg {
         };
 
         handleInput() {
-            if (app.keyboard.wasPressed(pc.KEY_LEFT))
+            /*if (app.keyboard.wasPressed(pc.KEY_LEFT))
                 this.startMoving(-1, 0);
             else if (app.keyboard.wasReleased(pc.KEY_LEFT))
                 this.stopMoving(-1, 0);
@@ -105,17 +105,17 @@ module agdg {
             if (app.keyboard.wasPressed(pc.KEY_DOWN))
                 this.startMoving(0, -1);
             else if (app.keyboard.wasReleased(pc.KEY_DOWN))
-                this.stopMoving(0, -1);
+                this.stopMoving(0, -1);*/
         }
 
         startMoving(xvel: number, yvel: number) {
-            this.requestedVelocity.add(new pc.Vec3(xvel, yvel, 0));
+            this.requestedVelocity.add(new BABYLON.Vector3(xvel, yvel, 0));
             this.moving = (this.requestedVelocity.length() > 0.001);
             
             if (this.moving)
                 this.playerEntity.velocity = this.requestedVelocity.clone().normalize().scale(0.05);
             else
-                this.playerEntity.velocity = pc.Vec3.ZERO;
+                this.playerEntity.velocity = BABYLON.Vector3.Zero();
 
             this.forceSync = true;
         }
@@ -127,7 +127,7 @@ module agdg {
         update() {
             if (this.moving) {
                 if (this.forceSync || ++this.framesWithoutSync >= 3) {
-                    this.session.updatePlayer(this.playerEntity.getPosition(), pc.Vec3.ZERO);
+                    this.session.updatePlayer(this.playerEntity.getPosition(), BABYLON.Vector3.Zero());
                     this.framesWithoutSync = 0;
                     this.forceSync = false;
                 }
@@ -136,9 +136,8 @@ module agdg {
     }
 
     export class World {
-        app: pc.Application;
-        root: pc.Entity;
         session: GameSession;
+        scene: BABYLON.Scene;       // TODO: really, really doesn't belong here
 
         entities: Array<agdg.Entity>;
         nextEid: number;
@@ -146,10 +145,9 @@ module agdg {
         playerEntity: agdg.Entity;
         player: Player;
 
-        constructor(app: pc.Application, root: pc.Entity, session: GameSession) {
-            this.app = app;
-            this.root = root;
+        constructor(session: GameSession, engine: BABYLON.Engine) {
             this.session = session;
+            this.scene = new BABYLON.Scene(engine);
 
             this.entities = [];
             this.nextEid = -1;
@@ -173,7 +171,7 @@ module agdg {
         }
 
         spawnEntity(eid: number, entity: agdg.Entity) {
-            this.root.addChild(entity);
+            //this.root.addChild(entity);
             this.entities[eid] = entity;
         }
 
@@ -182,10 +180,11 @@ module agdg {
 
             switch (desc.type) {
                 case 'box':
-                    entity.addComponent("model", {
+                    /*entity.addComponent("model", {
                         type: "box",
                         castShadows: true,
-                    });
+                    });*/
+                    entity.mesh = BABYLON.Mesh.CreateBox("", 1, this.scene);
                     break;
 
                 /*case 'cone':
@@ -197,11 +196,13 @@ module agdg {
                     break;*/
 
                 case 'light':
-                    if (desc.options.color)
-                        desc.options.color = new pc.Color(desc.options.color[0], desc.options.color[1], desc.options.color[2]);
+                    /*if (desc.options.color)
+                        desc.options.color = new BABYLON.Color3(desc.options.color[0], desc.options.color[1], desc.options.color[2]);
 
                     entity.addComponent("light", desc.options);
-                    entity.setEulerAngles(90, 0, 0);
+                    entity.setEulerAngles(90, 0, 0);*/
+
+                    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, -10, -10), this.scene);
                     break;
             }
 
@@ -209,101 +210,76 @@ module agdg {
                 entity.setName(desc.name);
 
             if (desc.pos)
-                entity.setPosition(new pc.Vec3(desc.pos[0], desc.pos[1], desc.pos[2]));
+                entity.setPosition(new BABYLON.Vector3(desc.pos[0], desc.pos[1], desc.pos[2]));
 
             if (desc.scale)
-                entity.setLocalScale(desc.scale[0], desc.scale[1], desc.scale[2]);
+                entity.mesh.scaling = new BABYLON.Vector3(desc.scale[0], desc.scale[1], desc.scale[2]);
 
-            this.root.addChild(entity);
+            //this.root.addChild(entity);
             this.entities[eid] = entity;
         }
 
-        spawnPlayerEntity(eid: number, name: string, pos: pc.Vec3, dir: pc.Vec3): agdg.Entity {
+        spawnPlayerEntity(eid: number, name: string, pos: BABYLON.Vector3, dir: BABYLON.Vector3): agdg.Entity {
             var entity = new agdg.Entity();
-            entity.addComponent("model", {
-                type: 'cone',
-            });
+            //entity.addComponent("model", {
+            //    type: 'cone',
+            //});
+            entity.mesh = BABYLON.Mesh.CreateCylinder(name, 1, 0, 1, 1, 1, this.scene);
             entity.setPosition(pos);
             entity.setName(name);
 
-            entity.setEulerAngles(90, 0, 0);
+            //entity.setEulerAngles(90, 0, 0);
 
             this.spawnEntity(eid, entity);
             return entity;
         }
 
         onZoneLoaded(zoneData) {
-            var app = this.app;
-            var self = this;
-            // Create box entity
-            /*var cube = new pc.Entity();
-            cube.addComponent("model", {
-                type: "capsule",
-                castShadows: true
-            });*/
+            var scene = this.scene;
 
-            // Create camera entity
-            var camera = new pc.Entity();
-            g_camera = camera.addComponent("camera", {
-                clearColor: new pc.Color(zoneData.bgColor[0], zoneData.bgColor[1], zoneData.bgColor[2])
-            });
-
-            // Create directional light entity
-            /*var light = new pc.Entity();
-            light.addComponent("light", {
-                type: "spot",
-                color: new pc.Color(0.7, 0.3, 0.7),
-                outerConeAngle: 60,
-                innerConeAngle: 40,
-                range: 50,
-                intensity: 1,
-                castShadows: true,
-                shadowBias: 0.005,
-                normalOffsetBias: 0.01,
-                shadowResolution: 2048
-            });*/
+            var camera = new BABYLON.FreeCamera("", new BABYLON.Vector3(10, 10, 10), scene);
+            //var camera = new BABYLON.TargetCamera("FreeCamera", BABYLON.Vector3.Zero(), scene);
+            //var camera = new BABYLON.ArcRotateCamera("", 0, 0, 30, null, scene);
 
             this.spawnEntities(zoneData.entities);
 
-            // Add to hierarchy
-            //app.root.addChild(cube);
-            app.root.addChild(camera);
-            //app.root.addChild(light);
+            function color3FromJSON(c) {
+                return new BABYLON.Color3(c[0], c[1], c[2]);
+            }
 
-            app.scene.ambientLight = new pc.Color(0.2, 0.2, 0.2);
+            scene.ambientColor = color3FromJSON(zoneData.bgColor);
 
             var cameraDist = 10;
 
-            var camVec = new pc.Vec3(-1, -1, 1);
+            var camVec = new BABYLON.Vector3(-1, -1, 1);
             camVec.scale(cameraDist / camVec.length());
 
-            var camLookAt = pc.Vec3.ZERO;
-            var camUp = new pc.Vec3(1, 1, 1);
+            var camLookAt = BABYLON.Vector3.Zero();
+            var camUp = new BABYLON.Vector3(1, 1, 1);
             camUp.normalize();
 
-            camera.setPosition(camVec);
-            camera.lookAt(camLookAt, camUp);
+            camera.position = camVec;
+            //camer
+            //camera.lookAt(camLookAt, camUp);
 
-            //cube.setPosition(0, 0, 1);
-            
-            /*light.setPosition(-3, -2, 5);
-            light.setEulerAngles(90, 0, 0);*/
-            
             // Register an update event
-            app.on("update", function (deltaTime) {
+            g_engine.runRenderLoop(() => {
                 //cube.rotate(10 * deltaTime, 20 * deltaTime, 30 * deltaTime);
 
-                if (self.player)
-                    self.player.handleInput();
+                scene.render();
 
-                self.updateEntities();
+                if (this.player)
+                    this.player.handleInput();
 
-                if (self.playerEntity) {
-                    camera.setPosition(camVec.clone().add(self.playerEntity.getPosition()));
-                    self.player.update();
+                this.updateEntities();
+
+                if (this.playerEntity) {
+                    //camera.setTarget(this.playerEntity.mesh.position); //= camVec.add(this.playerEntity.getPosition());
+                    //camera.rotation = new BABYLON.Vector3(0.0,0.0,0.0);
+                    this.player.update();
                 }
 
-                self.updateEntities2D()
+                this.updateEntities2D();
             });
 
             $('#application-canvas').focus();
@@ -326,11 +302,11 @@ module agdg {
     }
 
     export class GameScreen {
-        app: pc.Application;
+        //app: pc.Application;
         world: World;
 
-        constructor(app, world) {
-            this.app = app;
+        constructor(world: World) {
+            //this.app = app;
             this.world = world;
         }
     }

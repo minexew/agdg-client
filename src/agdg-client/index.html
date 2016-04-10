@@ -3,24 +3,44 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>MeMeO Client</title>
+    <title>AGDG MMO</title>
 
     <script src="js/jquery-2.2.0.min.js"></script>
-    <script src="js/playcanvas-latest.js"></script>
+
+    <script src="js/babylon.2.3.js"></script>
+    <script src="js/hand.js"></script>
 
     <script src="config/config.js"></script>
     <script src="agdg-client.js"></script>
 
     <style>
 html, body {
+    background-color: #333;
     color: #fff;
-    margin: 0;
     overflow: hidden;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 body, .form-control {
     font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
     font-size: 18px;
+}
+
+#application-canvas {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+#framerate-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    font-weight: bold;
 }
 
 .overlay {
@@ -147,7 +167,7 @@ button.form-control {
     </style>
 </head>
 <body>
-    <canvas id="application-canvas" tabindex="0"></canvas>
+    <canvas id="application-canvas"></canvas>
     <div id="chat-box" class="window" style="display: none">
         <input type="text" class="form-control small" id="chat-msg" placeholder="Type here to chat">
         <div id="chat-messages"></div>
@@ -187,5 +207,6 @@ button.form-control {
             </div>
         </div>
     </div>
+    <div id="framerate-indicator"></div>
 </body>
 </html>

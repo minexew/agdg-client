@@ -138,7 +138,7 @@ module agdg {
                 return this.zoneReady(zoneData);
         }
 
-        updatePlayer(pos: pc.Vec3, dir: pc.Vec3) {
+        updatePlayer(pos: BABYLON.Vector3, dir: BABYLON.Vector3) {
             this.protocol.sendCPlayerMovement(pos, dir, 0);
         }
 

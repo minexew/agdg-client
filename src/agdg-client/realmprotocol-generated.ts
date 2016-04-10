@@ -49,14 +49,14 @@ sendCZoneLoaded(cookie: number) {
 
 decodeCPlayerMovement(dv: DataView, offset: number) {
     var data: any = {};
-    data.pos = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.pos = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
-    data.dir = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.dir = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
     return data;
 }
 
-sendCPlayerMovement(pos: pc.Vec3, dir: pc.Vec3, cookie: number) {
+sendCPlayerMovement(pos: BABYLON.Vector3, dir: BABYLON.Vector3, cookie: number) {
     this.dv.setUint8(0, 4);
     this.dv.setUint8(1, cookie);
     var offset = 4;
@@ -157,9 +157,9 @@ decodeSZoneState(dv: DataView, offset: number) {
     offset += 4;
     data.playerName = this.decodeString(dv, offset);
     offset += 4 + data.playerName.length;
-    data.playerPos = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.playerPos = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
-    data.playerDir = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.playerDir = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
     var entities_count = dv.getUint32(offset, true);
     offset += 4;
@@ -174,9 +174,9 @@ decodeSZoneState(dv: DataView, offset: number) {
     offset += 4;
     the_entities.name = this.decodeString(dv, offset);
     offset += 4 + the_entities.name.length;
-    the_entities.pos = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    the_entities.pos = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
-    the_entities.dir = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    the_entities.dir = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
         data.entities.push(the_entities);
     }
@@ -184,7 +184,7 @@ decodeSZoneState(dv: DataView, offset: number) {
     return data;
 }
 
-sendSZoneState(playerEid: number, playerName: string, playerPos: pc.Vec3, playerDir: pc.Vec3, entities: Array<any>, cookie: number) {
+sendSZoneState(playerEid: number, playerName: string, playerPos: BABYLON.Vector3, playerDir: BABYLON.Vector3, entities: Array<any>, cookie: number) {
     this.dv.setUint8(0, 3);
     this.dv.setUint8(1, cookie);
     var offset = 4;
@@ -244,9 +244,9 @@ decodeSEntitySpawn(dv: DataView, offset: number) {
     offset += 4;
     data.entity.name = this.decodeString(dv, offset);
     offset += 4 + data.entity.name.length;
-    data.entity.pos = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.entity.pos = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
-    data.entity.dir = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.entity.dir = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
     return data;
 }
@@ -293,16 +293,16 @@ decodeSEntityUpdate(dv: DataView, offset: number) {
     var data: any = {};
     data.eid = dv.getInt32(offset, true);
     offset += 4;
-    data.pos = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.pos = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
-    data.dir = new pc.Vec3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
+    data.dir = new BABYLON.Vector3(dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true));
     offset += 12;
     data.latency = dv.getUint32(offset, true);
     offset += 4;
     return data;
 }
 
-sendSEntityUpdate(eid: number, pos: pc.Vec3, dir: pc.Vec3, latency: number, cookie: number) {
+sendSEntityUpdate(eid: number, pos: BABYLON.Vector3, dir: BABYLON.Vector3, latency: number, cookie: number) {
     this.dv.setUint8(0, 22);
     this.dv.setUint8(1, cookie);
     var offset = 4;

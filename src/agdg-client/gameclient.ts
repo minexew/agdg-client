@@ -1,92 +1,68 @@
 ﻿/// <reference path="gamescreen.ts"/>
 /// <reference path="gamesession.ts"/>
 /// <reference path="login.ts"/>
-/// <reference path="../playcanvas.ts"/>
+/// <reference path="../babylon.2.3.d.ts"/>
 
-class Engine {
-    start() {
+var title;
+var g_engine : BABYLON.Engine;
+
+class EngineFactory {
+    static create() {
         // Create a PlayCanvas application
         var canvas = document.getElementById("application-canvas");
 
-        var app = new pc.Application(canvas, {
-            keyboard: new pc.Keyboard(canvas)
-        });
-        app.start();
+        var engine = new BABYLON.Engine(<HTMLCanvasElement> canvas, true);
 
-        // Fill the available space at full resolution
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        window.addEventListener("resize", () => engine.resize());
 
-        this.loadFontRenderer(app);
-
-        return app;
-    }
-
-    loadFontRenderer(app: pc.Application) {
-        var entity = new pc.Entity();
-        entity.addComponent('script', {
-            name: 'font_renderer', url: 'assets/font_renderer.js', attributes: {
-                'text': 'Hello World',
-                'maxTextLength': 256,
-                'fontAtlas': 'assets/font/lato_0.png',
-                'fontJson': 'assters/font/lato.json',
-                'x': 0,
-                'y': 100,
-                'depth': 0,
-            }
-        });
-        app.root.addChild(entity);
+        return engine;
     }
 }
 
 class TitleScreen {
-    cube: pc.Entity;
-    camera: pc.Entity;
-    light: pc.Entity;
+    cube: BABYLON.Mesh;
 
-    initialize(app) {
-        var self = this;
+    initialize(engine: BABYLON.Engine) {
+        // Now create a basic Babylon Scene object
+        var scene = new BABYLON.Scene(engine);
 
-        // Create box entity
-        this.cube = new pc.Entity();
-        this.cube.addComponent("model", {
-            type: "box"
-        });
+        scene.clearColor = new BABYLON.Color3(0.3, 0.1, 0.05);
 
-        // Create camera entity
-        this.camera = new pc.Entity();
-        this.camera.addComponent("camera", {
-            clearColor: new pc.Color(0.1, 0.1, 0.1)
-        });
+        // This creates and positions a free camera
+        var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 0, -10), scene);
 
-        // Create directional light entity
-        this.light = new pc.Entity();
-        this.light.addComponent("light");
+        // This targets the camera to scene origin
+        camera.setTarget(BABYLON.Vector3.Zero());
 
-        // Add to hierarchy
-        app.root.addChild(this.cube);
-        app.root.addChild(this.camera);
-        app.root.addChild(this.light);
+        // This attaches the camera to the canvas
+        camera.attachControl(engine.getRenderingCanvas(), false);
 
-        // Set up initial positions and orientations
-        this.camera.setPosition(0, 0, 3);
-        this.light.setEulerAngles(45, 0, 0);
+        // This creates a light, aiming 0,1,0 - to the sky.
+        //var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
 
-        // Register an update event
-        app.on("update", function (deltaTime) {
-            self.cube.rotate(10 * deltaTime, 20 * deltaTime, 30 * deltaTime);
+        var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, -10, -10), scene);
+        light0.diffuse = new BABYLON.Color3(1, 0, 0);
+        //light0.specular = new BABYLON.Color3(1, 1, 1);
+        light0.specular = BABYLON.Color3.Black();
+
+        // Let's try our built-in 'sphere' shape. Params: name, subdivisions, size, scene
+        var cube = BABYLON.Mesh.CreateIcoSphere("sphere1", {radius: 3, flat: true, subdivisions: 2}, scene);
+
+        var framerateIndicator = $('#framerate-indicator')[0];
+
+        engine.runRenderLoop(function () {
+            scene.render();
+
+            cube.rotation.y += 0.01;
+
+            framerateIndicator.innerHTML = engine.getFps().toFixed();
         });
     }
 
     uninitialize() {
-        this.cube.destroy();
-        this.camera.destroy();
-        this.light.destroy();
+        g_engine.stopRenderLoop();
     }
 }
-
-var title;
-var app;
 
 function connectToRealm(url: string, token: string) {
     title.uninitialize();
@@ -95,9 +71,9 @@ function connectToRealm(url: string, token: string) {
     var session = new agdg.GameSession();
 
     var chat = new agdg.Chat(session);
-    var world = new agdg.World(app, app.root, session);
+    var world = new agdg.World(session, g_engine);
 
-    var gs = new agdg.GameScreen(app, world);
+    var gs = new agdg.GameScreen(world);
 
     session.chat = chat;
     session.world = world;
@@ -106,11 +82,10 @@ function connectToRealm(url: string, token: string) {
 }
 
 window.onload = () => {
-    var engine = new Engine();
-    app = engine.start();
+    g_engine = EngineFactory.create();
     
     var login = new Login.LoginSession();
 
     title = new TitleScreen();
-    title.initialize(app);
+    title.initialize(g_engine);
 };
