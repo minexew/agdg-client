@@ -34,7 +34,7 @@ module agdg {
             this.ws.onmessage = event => {
                 // TODO: state machine etc.
 
-                console.log(event.data, event.data.byteLength);
+                //console.log(event.data, event.data.byteLength);
 
                 var dv = new DataView(event.data);
                 //console.log(dv.getUint8(0));
@@ -45,7 +45,7 @@ module agdg {
                     var cookie = dv.getUint8(offset + 1);
                     var payloadLength = dv.getUint16(offset + 2);
 
-                    console.log('command', code, cookie, payloadLength, offset + 4);
+                    //console.log('command', code, cookie, payloadLength, offset + 4);
                     this.handleCommand(dv, code, cookie, offset + 4);
 
                     offset += 4 + payloadLength;
