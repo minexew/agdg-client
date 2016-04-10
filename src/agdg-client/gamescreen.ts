@@ -2,7 +2,9 @@
 /// <reference path="../jquery.ts"/>
 
 module agdg {
-    //export var g_camera: pc.CameraComponent;
+    // TODO: get rid of these
+    export var g_camera: BABYLON.WorldCamera;
+    export var g_scene: BABYLON.Scene;
 
     export class Chat {
         chatBox: JQuery;
@@ -81,10 +83,36 @@ module agdg {
         requestedVelocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         framesWithoutSync: number = 0;
 
+        keys = {};
+
         constructor(playerEntity: agdg.Entity, session: GameSession) {
             this.playerEntity = playerEntity;
             this.session = session;
+
+            this.setUpInput();
         };
+
+        setUpInput() {
+            window.addEventListener('keydown', evt => {
+                if (evt.repeat) return;
+                if (evt.keyCode === 38) this.startMoving(0, -1);
+                else if (evt.keyCode === 40) this.startMoving(0, 1);
+                else if (evt.keyCode === 37) this.startMoving(-1, 0);
+                else if (evt.keyCode === 39) this.startMoving(1, 0);
+                else return;
+                evt.preventDefault();
+            });
+
+            window.addEventListener('keyup', evt => {
+                if (evt.repeat) return;
+                if (evt.keyCode === 38) this.stopMoving(0, -1);
+                else if (evt.keyCode === 40) this.stopMoving(0, 1);
+                else if (evt.keyCode === 37) this.stopMoving(-1, 0);
+                else if (evt.keyCode === 39) this.stopMoving(1, 0);
+                else return;
+                evt.preventDefault();
+            });
+        }
 
         handleInput() {
             /*if (app.keyboard.wasPressed(pc.KEY_LEFT))
@@ -109,11 +137,11 @@ module agdg {
         }
 
         startMoving(xvel: number, yvel: number) {
-            this.requestedVelocity.add(new BABYLON.Vector3(xvel, yvel, 0));
+            this.requestedVelocity.addInPlace(new BABYLON.Vector3(xvel, yvel, 0));
             this.moving = (this.requestedVelocity.length() > 0.001);
             
             if (this.moving)
-                this.playerEntity.velocity = this.requestedVelocity.clone().normalize().scale(0.05);
+                this.playerEntity.velocity = BABYLON.Vector3.Normalize(this.requestedVelocity).scale(0.05);
             else
                 this.playerEntity.velocity = BABYLON.Vector3.Zero();
 
@@ -171,38 +199,19 @@ module agdg {
         }
 
         spawnEntity(eid: number, entity: agdg.Entity) {
-            //this.root.addChild(entity);
             this.entities[eid] = entity;
         }
 
         spawnEntityFromDesc(eid: number, desc) {
-            var entity = new agdg.Entity();
+            var entity: agdg.Entity;
 
             switch (desc.type) {
                 case 'box':
-                    /*entity.addComponent("model", {
-                        type: "box",
-                        castShadows: true,
-                    });*/
-                    entity.mesh = BABYLON.Mesh.CreateBox("", 1, this.scene);
+                    entity = new agdg.Entity(BABYLON.Mesh.CreateBox("", 1, this.scene));
                     break;
 
-                /*case 'cone':
-                    entity.addComponent("model", {
-                        type: "cone",
-                        castShadows: true,
-                    });
-                    entity.setEulerAngles(90, 0, 0);
-                    break;*/
-
                 case 'light':
-                    /*if (desc.options.color)
-                        desc.options.color = new BABYLON.Color3(desc.options.color[0], desc.options.color[1], desc.options.color[2]);
-
-                    entity.addComponent("light", desc.options);
-                    entity.setEulerAngles(90, 0, 0);*/
-
-                    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, -10, -10), this.scene);
+                    entity = new agdg.Entity(new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, -10, -10), this.scene));
                     break;
             }
 
@@ -213,22 +222,17 @@ module agdg {
                 entity.setPosition(new BABYLON.Vector3(desc.pos[0], desc.pos[1], desc.pos[2]));
 
             if (desc.scale)
-                entity.mesh.scaling = new BABYLON.Vector3(desc.scale[0], desc.scale[1], desc.scale[2]);
+                entity.node.scaling = new BABYLON.Vector3(desc.scale[0], desc.scale[1], desc.scale[2]);
 
-            //this.root.addChild(entity);
             this.entities[eid] = entity;
         }
 
         spawnPlayerEntity(eid: number, name: string, pos: BABYLON.Vector3, dir: BABYLON.Vector3): agdg.Entity {
-            var entity = new agdg.Entity();
-            //entity.addComponent("model", {
-            //    type: 'cone',
-            //});
-            entity.mesh = BABYLON.Mesh.CreateCylinder(name, 1, 0, 1, 1, 1, this.scene);
+            var entity = new agdg.Entity(BABYLON.Mesh.CreateCylinder(name, 1, 0, 1, 12, 1, this.scene));
             entity.setPosition(pos);
             entity.setName(name);
 
-            //entity.setEulerAngles(90, 0, 0);
+            entity.node.rotation = new BABYLON.Vector3(Math.PI * 0.5, 0, 0);
 
             this.spawnEntity(eid, entity);
             return entity;
@@ -236,37 +240,20 @@ module agdg {
 
         onZoneLoaded(zoneData) {
             var scene = this.scene;
+            g_scene = scene;
 
-            var camera = new BABYLON.FreeCamera("", new BABYLON.Vector3(10, 10, 10), scene);
-            //var camera = new BABYLON.TargetCamera("FreeCamera", BABYLON.Vector3.Zero(), scene);
-            //var camera = new BABYLON.ArcRotateCamera("", 0, 0, 30, null, scene);
+            // TODO: clean up this awful, awful mess
+            var camera = new BABYLON.WorldCamera("", 0, 0, 10, BABYLON.Vector3.Zero(), scene);
+            camera.upVector = new BABYLON.Vector3(0, 0, 1);
+            g_camera = camera;
 
             this.spawnEntities(zoneData.entities);
 
-            function color3FromJSON(c) {
-                return new BABYLON.Color3(c[0], c[1], c[2]);
-            }
-
-            scene.ambientColor = color3FromJSON(zoneData.bgColor);
-
-            var cameraDist = 10;
-
-            var camVec = new BABYLON.Vector3(-1, -1, 1);
-            camVec.scale(cameraDist / camVec.length());
-
-            var camLookAt = BABYLON.Vector3.Zero();
-            var camUp = new BABYLON.Vector3(1, 1, 1);
-            camUp.normalize();
-
-            camera.position = camVec;
-            //camer
-            //camera.lookAt(camLookAt, camUp);
-
+            scene.ambientColor = BABYLON.Color3.FromArray(zoneData.bgColor);
+            
             // Register an update event
             g_engine.runRenderLoop(() => {
                 //cube.rotate(10 * deltaTime, 20 * deltaTime, 30 * deltaTime);
-
-                scene.render();
 
                 if (this.player)
                     this.player.handleInput();
@@ -274,10 +261,11 @@ module agdg {
                 this.updateEntities();
 
                 if (this.playerEntity) {
-                    //camera.setTarget(this.playerEntity.mesh.position); //= camVec.add(this.playerEntity.getPosition());
-                    //camera.rotation = new BABYLON.Vector3(0.0,0.0,0.0);
+                    camera.setTarget(this.playerEntity.getPosition());
                     this.player.update();
                 }
+
+                scene.render();
 
                 this.updateEntities2D();
             });
@@ -302,11 +290,9 @@ module agdg {
     }
 
     export class GameScreen {
-        //app: pc.Application;
         world: World;
 
         constructor(world: World) {
-            //this.app = app;
             this.world = world;
         }
     }

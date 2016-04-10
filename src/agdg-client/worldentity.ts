@@ -5,7 +5,7 @@ module agdg {
     export class Entity {
         velocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         name: string;
-        mesh: BABYLON.Mesh;
+        node: any;
 
         lerpSegments: Array<any>;
         lastPoint: any;
@@ -18,7 +18,13 @@ module agdg {
         chatBubbleHeight: number;
         chatBubbleTimer: number;
 
+        constructor(node: BABYLON.Node) {
+            this.node = node;
+        }
+
         destroy() {
+            this.node.dispose();
+
             if (this.labelDiv)
                 this.labelDiv.remove();
 
@@ -29,7 +35,7 @@ module agdg {
         getName(): string { return this.name; }
 
         getPosition(): BABYLON.Vector3 {
-            return this.mesh.position;
+            return this.node.position;
         }
 
         interpolatePosition() {
@@ -56,7 +62,7 @@ module agdg {
                     remainder -= multiplier;
                 }
 
-                this.mesh.position.addInPlace(seg.vec.scale(multiplier));
+                this.node.position.addInPlace(seg.vec.scale(multiplier));
 
                 seg.duration -= multiplier;
 
@@ -83,8 +89,8 @@ module agdg {
         }
 
         setPosition(pos: BABYLON.Vector3) {
-            if (this.mesh)
-                this.mesh.position = pos;
+            if (this.node)
+                this.node.position = pos;
         }
 
         showChatBubble(messageHtml:JQuery) {
@@ -103,23 +109,25 @@ module agdg {
         update() {
             if (this.lerpSegments)
                 this.interpolatePosition();
-            else if (this.mesh)
-                this.mesh.position.addInPlace(this.velocity);
+            else if (this.node)
+                this.node.position.addInPlace(this.velocity);
         }
 
         update2D() {
             if (this.labelDiv) {
-                //var pos = g_camera.worldToScreen(this.getPosition());
-                //this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
+                var pos = BABYLON.Vector3.Project(this.getPosition(), BABYLON.Matrix.Identity(), g_scene.getTransformMatrix(), g_camera.viewport.toGlobal(g_engine));
+                this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
             }
 
             if (this.chatBubble) {
-                if (this.chatBubbleTimer-- <= 0) {
-                    this.chatBubble.fadeOut(1000, function() { $(this).remove(); });
-                    this.chatBubble = undefined;
-                }
-                //else
-                //    this.chatBubble.css('left', pos.x - this.chatBubbleWidth / 2).css('top', pos.y - 100 - this.chatBubbleHeight);
+                --this.chatBubbleTimer;
+
+                if (this.chatBubbleTimer == 0)
+                    this.chatBubble.fadeOut(1000);
+                else if (this.chatBubbleTimer <= -100)
+                    this.chatBubble.remove();
+                else
+                    this.chatBubble.css('left', pos.x - this.chatBubbleWidth / 2).css('top', pos.y - 100 - this.chatBubbleHeight);
             }
         }
 
