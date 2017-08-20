@@ -129,13 +129,17 @@ module agdg {
             }
         }
 
-        onZoneDataLoaded(zoneData) {
+        async onZoneDataLoaded(zoneData) {
             var dependencies = zoneData.dependencies;
 
             console.log('deps', dependencies);
 
-            if (!dependencies.length)
-                return this.zoneReady(zoneData);
+            // sequentially load all dependencies
+            for (const dep of dependencies) {
+                await g_assetCache.getOrDownloadAsset2(dep);
+            }
+
+            this.zoneReady(zoneData);
         }
 
         updatePlayer(pos: BABYLON.Vector3, dir: BABYLON.Vector3) {

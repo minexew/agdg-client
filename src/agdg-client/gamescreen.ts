@@ -1,4 +1,5 @@
 ﻿/// <reference path="worldentity.ts"/>
+/// <reference path="../babylon.objFileLoader.d.ts"/>
 /// <reference path="../jquery.ts"/>
 
 module agdg {
@@ -173,8 +174,8 @@ module agdg {
         session: GameSession;
         scene: BABYLON.Scene;       // TODO: really, really doesn't belong here
 
-        entities: Array<agdg.Entity>;
-        nextEid: number;
+        entities: agdg.Entity[] = [];
+        nextEid: number = -1;
 
         playerEntity: agdg.Entity;
         player: Player;
@@ -182,9 +183,6 @@ module agdg {
         constructor(session: GameSession, engine: BABYLON.Engine) {
             this.session = session;
             this.scene = new BABYLON.Scene(engine);
-
-            this.entities = [];
-            this.nextEid = -1;
         }
 
         despawnEntity(eid: number) {
@@ -225,10 +223,10 @@ module agdg {
                 entity.setName(desc.name);
 
             if (desc.pos)
-                entity.setPosition(new BABYLON.Vector3(desc.pos[0], desc.pos[1], desc.pos[2]));
+                entity.setPosition(BABYLON.Vector3.FromArray(desc.pos));
 
             if (desc.scale)
-                entity.node.scaling = new BABYLON.Vector3(desc.scale[0], desc.scale[1], desc.scale[2]);
+                entity.node.scaling = BABYLON.Vector3.FromArray(desc.scale);
 
             this.entities[eid] = entity;
         }
@@ -244,6 +242,24 @@ module agdg {
             return entity;
         }
 
+        // TODO: probably don't want this to be async
+        async spawnProps(props: any[]) {
+            const ldr = new BABYLON.OBJFileLoader();
+
+            for (const prop of props) {
+                const modelData = await g_assetCache.getOrDownloadAssetAsText(prop.model);
+
+                const meshes: BABYLON.Mesh[] = [];
+                ldr.importMesh(null, this.scene, modelData, '', meshes, [], []);
+
+                for (const mesh of meshes) {
+                    mesh.position = BABYLON.Vector3.FromArray(prop.pos);
+                    mesh.rotation = new BABYLON.Vector3(Math.PI * 0.5, 0, 0);
+                    mesh.scaling = new BABYLON.Vector3(1.0/16.0, 1.0/16.0, 1.0/16.0);
+                }
+            }
+        }
+
         onZoneLoaded(zoneData) {
             var scene = this.scene;
             g_scene = scene;
@@ -254,6 +270,7 @@ module agdg {
             g_camera = camera;
 
             this.spawnEntities(zoneData.entities);
+            this.spawnProps(zoneData.props);
 
             scene.ambientColor = BABYLON.Color3.FromArray(zoneData.bgColor);
             

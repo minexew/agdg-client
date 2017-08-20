@@ -11,10 +11,10 @@ agdg-client : dist/index.html dist/agdg-client.js
 mgmt-console : dist/mgmt-console.html dist/mgmt-console.js
 
 dist/agdg-client.js : $(AGDG_CLIENT_SOURCE)
-	tsc --out $@ $(AGDG_CLIENT_SOURCE)
+	tsc --target es6 --out $@ $(AGDG_CLIENT_SOURCE)
 
 dist/mgmt-console.js : $(MGMT_CONSOLE_SOURCE)
-	tsc --out $@ $(MGMT_CONSOLE_SOURCE)
+	tsc --target es6 --out $@ $(MGMT_CONSOLE_SOURCE)
 
 dist/%.html : src/agdg-client/%.html
 	cp $< $@
