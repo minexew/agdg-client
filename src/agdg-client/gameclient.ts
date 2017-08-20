@@ -1,7 +1,7 @@
 ﻿/// <reference path="gamescreen.ts"/>
 /// <reference path="gamesession.ts"/>
 /// <reference path="login.ts"/>
-/// <reference path="../babylon.2.3.d.ts"/>
+/// <reference path="../babylon.d.ts"/>
 
 var title;
 var g_engine : BABYLON.Engine;
@@ -26,7 +26,7 @@ class TitleScreen {
         // Now create a basic Babylon Scene object
         var scene = new BABYLON.Scene(engine);
 
-        scene.clearColor = new BABYLON.Color3(0.3, 0.1, 0.05);
+        scene.clearColor = new BABYLON.Color4(0.3, 0.1, 0.05, 1.0);
 
         // This creates and positions a free camera
         var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 0, -10), scene);

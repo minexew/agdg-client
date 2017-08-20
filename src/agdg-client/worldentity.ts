@@ -1,5 +1,5 @@
 ﻿/// <reference path="gamescreen.ts"/>
-/// <reference path="../babylon.2.3.d.ts"/>
+/// <reference path="../babylon.d.ts"/>
 
 module agdg {
     export class Entity {
@@ -115,7 +115,8 @@ module agdg {
 
         update2D() {
             if (this.labelDiv) {
-                var pos = BABYLON.Vector3.Project(this.getPosition(), BABYLON.Matrix.Identity(), g_scene.getTransformMatrix(), g_camera.viewport.toGlobal(g_engine));
+				var pos = BABYLON.Vector3.Project(this.getPosition(), BABYLON.Matrix.Identity(), g_scene.getTransformMatrix(),
+						g_camera.viewport.toGlobal(g_engine.getRenderWidth(), g_engine.getRenderHeight()));
                 this.labelDiv.css('left', pos.x - this.labelWidth / 2).css('top', pos.y - 100);
             }
 

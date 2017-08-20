@@ -54,21 +54,20 @@
         }
 
         downloadAsset(hash: string, callback: (data: Blob) => void, failCallback: (error) => void) {
-            var self = this;
-            var xhr = new XMLHttpRequest();
+            const xhr = new XMLHttpRequest();
             xhr.open('GET', 'content/' + hash, true);
             xhr.responseType = 'blob';
 
-            xhr.onload = function (e) {
-                if (this.status == 200) {
-                    var blob = this.response;
+            xhr.onload = (e) => {
+                if (xhr.status == 200) {
+					var blob = xhr.response;
                     console.log('downloaded', hash);
-                    self.putAsset(hash, blob);
+                    this.putAsset(hash, blob);
                     callback(blob);
                 }
             };
 
-            xhr.onerror = function (e) {
+            xhr.onerror = (e) => {
                 var target: any = e.target;
                 failCallback(target.statusText);
             }
