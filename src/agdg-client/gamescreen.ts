@@ -195,6 +195,53 @@ module agdg {
             return this.entities[eid];
         }
 
+        // The method name is misleading; the mesh is already spawned in the scene
+        instantiateProp(prop, mesh: BABYLON.AbstractMesh) {
+            // Transformations, declared here in order of application
+            const transformCoordSpace = BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(1, 0, 0), Math.PI * 0.5);
+            const rotate = BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0, 0, 1), (prop.rotation || 0) * (Math.PI / 180));
+
+            mesh.position = BABYLON.Vector3.FromArray(prop.pos);
+            mesh.rotationQuaternion = rotate.multiply(transformCoordSpace);
+            mesh.scaling = new BABYLON.Vector3(1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0);
+        }
+
+        // TODO: factor out
+        async loadModel(hash: string): Promise<BABYLON.AbstractMesh[]> {
+            let meshes = null;
+
+            await g_assetCache.withOverlay(hash, async (paths) => {
+                let modelPath;
+
+                // scan the overlay find a supported model file
+                for (const path of paths) {
+                    if (path.endsWith('.obj')) {
+                        modelPath = path;
+                        break;
+                    }
+                }
+
+                if (modelPath) {
+                    meshes = await new Promise<BABYLON.AbstractMesh[]>((resolve, reject) => {
+                        BABYLON.SceneLoader.ImportMesh(null, "", modelPath, this.scene, (meshes) => {
+                            resolve(meshes);
+                        });
+                    });
+
+                    function sleep(ms) {
+                        return new Promise(resolve => setTimeout(resolve, ms));
+                    }
+
+                    // HACK Engine.createTexture does asynchronous work behind the scenes and image loading doesn't start immediately.
+                    // We need to block the callback to prevent the overlay being torn down early
+                    // Sad!
+                    await sleep(100);
+                }
+            });
+
+            return meshes;
+        }
+
         spawnEntities(entitiesToSpawn) {
             for (var e in entitiesToSpawn) {
                 this.spawnEntityFromDesc(this.nextEid, entitiesToSpawn[e]);
@@ -244,19 +291,29 @@ module agdg {
 
         // TODO: probably don't want this to be async
         async spawnProps(props: any[]) {
+            BABYLON.OBJFileLoader.OPTIMIZE_WITH_UV = true;
             const ldr = new BABYLON.OBJFileLoader();
 
-            for (const prop of props) {
-                const modelData = await g_assetCache.getOrDownloadAssetAsText(prop.model);
+            let meshCache: { [s: string]: BABYLON.AbstractMesh[]; } = {};
 
-                const meshes: BABYLON.Mesh[] = [];
-                ldr.importMesh(null, this.scene, modelData, '', meshes, [], []);
+            for (const prop of props) {
+                // prop.model specifies an overlay containing the model + its required resources
+
+                if (prop.model in meshCache) {
+                    for (const mesh of meshCache[prop.model]) {
+                        this.instantiateProp(prop, mesh.clone(''));
+                    }
+
+                    continue;
+                }
+
+                const meshes = await this.loadModel(prop.model);
 
                 for (const mesh of meshes) {
-                    mesh.position = BABYLON.Vector3.FromArray(prop.pos);
-                    mesh.rotation = new BABYLON.Vector3(Math.PI * 0.5, 0, 0);
-                    mesh.scaling = new BABYLON.Vector3(1.0/16.0, 1.0/16.0, 1.0/16.0);
+                    this.instantiateProp(prop, mesh);
                 }
+
+                meshCache[prop.model] = meshes;
             }
         }
 
